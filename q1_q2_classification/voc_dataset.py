@@ -67,10 +67,21 @@ class VOCDataset(Dataset):
 
             #  The class vector should be a 20-dimensional vector with class[i] = 1 if an object of class i is present in the image and 0 otherwise
             class_vec = torch.zeros(20)
+            class_list = tree.findall('object')
+            for obj in class_list:
+                class_name = obj.find('name').text
+                class_index = self.get_class_index(class_name)
+                class_vec[class_index] = 1
 
             # The weight vector should be a 20-dimensional vector with weight[i] = 0 iff an object of class i has the `difficult` attribute set to 1 in the XML file and 1 otherwise
             # The difficult attribute specifies whether a class is ambiguous and by setting its weight to zero it does not contribute to the loss during training 
             weight_vec = torch.ones(20)
+            for obj in class_list:
+                class_name = obj.find('name').text
+                class_index = self.get_class_index(class_name)
+                difficult = int(obj.find('difficult').text)
+                if difficult == 1:
+                    weight_vec[class_index] = 0
 
             ######################################################################
             #                            END OF YOUR CODE                        #
@@ -92,7 +103,18 @@ class VOCDataset(Dataset):
         # change and you will have to write the correct value of `flat_dim`
         # in line 46 in simple_cnn.py
         ######################################################################
-        pass
+        is_training = self.split in ('train', 'trainval')
+        if is_training and os.environ.get('HW1_DISABLE_AUGMENTATION') != '1':
+            return [
+                transforms.RandomHorizontalFlip(),
+                transforms.RandomRotation(10),
+                transforms.RandomResizedCrop(self.size, scale=(0.8, 1.0)),
+            ]
+        elif not is_training:
+            return [
+                transforms.CenterCrop(self.size),
+            ]
+        return []
         ######################################################################
         #                            END OF YOUR CODE                        #
         ######################################################################

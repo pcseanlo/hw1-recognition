@@ -64,7 +64,7 @@ class ARGS(object):
     
     @property
     def device(self):
-        return torch.device("cuda" if self.use_cuda else "cpu")
+        return torch.device("mps" if self.use_cuda else "cpu")
 
 
 def get_data_loader(name='voc', train=True, batch_size=64, split='train', inp_size=224):

@@ -3,6 +3,7 @@ from __future__ import print_function
 import torch
 import numpy as np
 from torch.utils.tensorboard import SummaryWriter
+import os
 import utils
 from voc_dataset import VOCDataset
 
@@ -23,7 +24,7 @@ def save_model(epoch, model_name, model):
 
 
 def train(args, model, optimizer, scheduler=None, model_name='model'):
-    writer = SummaryWriter()
+    writer = SummaryWriter(log_dir=os.environ.get('HW1_LOG_DIR'))
     train_loader = utils.get_data_loader(
         'voc', train=True, batch_size=args.batch_size, split='trainval', inp_size=args.inp_size)
     test_loader = utils.get_data_loader(
@@ -53,7 +54,7 @@ def train(args, model, optimizer, scheduler=None, model_name='model'):
             # Function Outputs:
             #   - `output`: Computed loss, a single floating point number
             ##################################################################
-            loss = 0
+            loss = torch.nn.BCEWithLogitsLoss()(output, target)
             ##################################################################
             #                          END OF YOUR CODE                      #
             ##################################################################
@@ -97,4 +98,9 @@ def train(args, model, optimizer, scheduler=None, model_name='model'):
     # Validation iteration
     test_loader = utils.get_data_loader('voc', train=False, batch_size=args.test_batch_size, split='test', inp_size=args.inp_size)
     ap, map = utils.eval_dataset_map(model, args.device, test_loader)
+    checkpoint_path = os.environ.get('HW1_CHECKPOINT_PATH')
+    if checkpoint_path:
+        os.makedirs(os.path.dirname(checkpoint_path), exist_ok=True)
+        torch.save(model.state_dict(), checkpoint_path)
+    writer.close()
     return ap, map
